@@ -48,20 +48,28 @@ export class SmartInsightsService {
     inject<CloudSubscriptionPaymentsService>(CloudSubscriptionPaymentsService);
 
   public async getInsights(): Promise<MoneyInsight[]> {
-    const income = this.budgetService.income();
     const expenses = this.expensesService.expenses();
     const goals = this.savingsGoalsService.goals();
 
     const [subscriptions, subscriptionPayments, savingsAccounts, dailyAllowanceSummary] =
       await this.getCloudDataSafely();
 
+    const income = this.budgetService.income();
+    const totalAvailableIncome = this.budgetService.totalAvailableIncome();
+
     const insights: MoneyInsight[] = [
       ...this.getDailyAllowanceInsights(dailyAllowanceSummary),
+
       ...this.getForecastInsights(dailyAllowanceSummary),
-      ...this.getBudgetSplitInsights(income, expenses),
-      ...this.getSpendingInsights(income, expenses),
+
+      ...this.getBudgetSplitInsights(expenses),
+
+      ...this.getSpendingInsights(income, totalAvailableIncome, expenses),
+
       ...this.getSubscriptionInsights(income, subscriptions, subscriptionPayments),
+
       ...this.getSavingsInsights(savingsAccounts),
+
       ...this.getSavingsGoalInsights(goals),
     ];
 
@@ -77,12 +85,18 @@ export class SmartInsightsService {
     ]
   > {
     if (!this.authService.isLoggedIn()) {
+      this.budgetService.setMonthlyBenefits(0, 0);
       return [[], [], [], null];
     }
 
     try {
       const currentPeriod = await this.spendingPeriodsService.getOrCreateCurrentSpendingPeriod(
         new Date(),
+      );
+
+      this.budgetService.setMonthlyBenefits(
+        Number(currentPeriod.meal_vouchers_amount ?? 0),
+        Number(currentPeriod.gift_cards_amount ?? 0),
       );
 
       const results = await Promise.allSettled([
@@ -117,8 +131,10 @@ export class SmartInsightsService {
           include_planned_recurring: currentPeriod.include_planned_recurring,
           created_at: currentPeriod.created_at,
           updated_at: currentPeriod.updated_at,
-          meal_vouchers_amount: 0,
-          gift_cards_amount: 0
+
+          meal_vouchers_amount: Number(currentPeriod.meal_vouchers_amount ?? 0),
+
+          gift_cards_amount: Number(currentPeriod.gift_cards_amount ?? 0),
         },
         cloudExpenses.map((expense) => ({
           id: expense.id,
@@ -132,11 +148,17 @@ export class SmartInsightsService {
     } catch (error) {
       console.error('Could not load cloud data for insights:', error);
 
+      this.budgetService.setMonthlyBenefits(0, 0);
+
       return [[], [], [], null];
     }
   }
 
-  private getSpendingInsights(income: number, expenses: Expense[]): MoneyInsight[] {
+  private getSpendingInsights(
+    income: number,
+    totalAvailableIncome: number,
+    expenses: Expense[],
+  ): MoneyInsight[] {
     if (income <= 0) {
       return [
         {
@@ -154,8 +176,10 @@ export class SmartInsightsService {
     }
 
     const currentMonthExpenses = this.getCurrentMonthExpenses(expenses);
+
     const spentThisMonth = this.sumExpenses(currentMonthExpenses);
-    const spendingRatio = spentThisMonth / income;
+
+    const spendingRatio = totalAvailableIncome > 0 ? spentThisMonth / totalAvailableIncome : 0;
 
     const insights: MoneyInsight[] = [];
 
@@ -164,10 +188,10 @@ export class SmartInsightsService {
         id: 'high-monthly-spending',
         type: 'danger',
         category: 'spending',
-        title: 'You are close to your monthly income',
+        title: 'You are close to your monthly available balance',
         message: `You already spent ${this.formatMoney(spentThisMonth)}, which is ${Math.round(
           spendingRatio * 100,
-        )}% of your income.`,
+        )}% of your available salary and benefits.`,
         icon: '🚨',
         priority: 100,
         actionLabel: 'View expenses',
@@ -179,9 +203,9 @@ export class SmartInsightsService {
         type: 'warning',
         category: 'spending',
         title: 'Spending is getting high',
-        message: `You spent ${this.formatMoney(
-          spentThisMonth,
-        )} this month. Keep an eye on the next purchases.`,
+        message: `You spent ${this.formatMoney(spentThisMonth)} from the ${this.formatMoney(
+          totalAvailableIncome,
+        )} available this month.`,
         icon: '⚠️',
         priority: 80,
         actionLabel: 'View expenses',
@@ -193,9 +217,9 @@ export class SmartInsightsService {
         type: 'success',
         category: 'spending',
         title: 'Your spending looks controlled',
-        message: `You spent ${this.formatMoney(
-          spentThisMonth,
-        )} so far this month. You are still below 70% of your income.`,
+        message: `You spent ${this.formatMoney(spentThisMonth)} so far from ${this.formatMoney(
+          totalAvailableIncome,
+        )} available this month.`,
         icon: '✅',
         priority: 50,
       });
@@ -624,7 +648,9 @@ export class SmartInsightsService {
     return Math.floor((normalizedEnd - normalizedStart) / millisecondsPerDay);
   }
 
-  private getBudgetSplitInsights(income: number, expenses: Expense[]): MoneyInsight[] {
+  private getBudgetSplitInsights(expenses: Expense[]): MoneyInsight[] {
+    const income = this.budgetService.income();
+
     if (income <= 0) {
       return [];
     }
@@ -666,61 +692,84 @@ export class SmartInsightsService {
       },
     );
 
-    const needsRatio = totals.needs / income;
-    const wantsRatio = totals.wants / income;
-    const savingsRatio = totals.savings / income;
+    /*
+     * Aceste valori conțin deja beneficiile:
+     *
+     * Needs = 50% income + meal vouchers
+     * Wants = 30% income + gift cards
+     * Savings = 20% income
+     */
+    const needsBudget = this.budgetService.needsAmount();
+
+    const wantsBudget = this.budgetService.wantsAmount();
+
+    const savingsTarget = this.budgetService.savingsAmount();
 
     const insights: MoneyInsight[] = [];
 
-    if (wantsRatio > 0.3) {
+    if (totals.wants > wantsBudget) {
+      const exceededAmount = totals.wants - wantsBudget;
+
+      const usagePercentage =
+        wantsBudget > 0 ? Math.round((totals.wants / wantsBudget) * 100) : 100;
+
       insights.push({
         id: 'wants-budget-exceeded',
-        type: wantsRatio >= 0.4 ? 'danger' : 'warning',
+        type: usagePercentage >= 125 ? 'danger' : 'warning',
         category: 'budget_split',
-        title: 'Your wants budget is above 30%',
-        message: `You recorded ${this.formatMoney(
-          totals.wants,
-        )} for wants this month, approximately ${Math.round(wantsRatio * 100)}% of your income.`,
+        title: 'Your Wants budget was exceeded',
+        message: `You spent ${this.formatMoney(totals.wants)} on Wants, which is ${this.formatMoney(
+          exceededAmount,
+        )} above your budget of ${this.formatMoney(wantsBudget)}.`,
         icon: '🛍️',
-        priority: wantsRatio >= 0.4 ? 98 : 88,
+        priority: usagePercentage >= 125 ? 98 : 88,
         actionLabel: 'Review wants',
         route: '/expenses',
       });
     }
 
-    if (needsRatio > 0.5) {
+    if (totals.needs > needsBudget) {
+      const exceededAmount = totals.needs - needsBudget;
+
+      const usagePercentage =
+        needsBudget > 0 ? Math.round((totals.needs / needsBudget) * 100) : 100;
+
       insights.push({
         id: 'needs-budget-exceeded',
-        type: needsRatio >= 0.65 ? 'danger' : 'warning',
+        type: usagePercentage >= 125 ? 'danger' : 'warning',
         category: 'budget_split',
-        title: 'Your needs budget is above 50%',
-        message: `Your needs total ${this.formatMoney(totals.needs)}, approximately ${Math.round(
-          needsRatio * 100,
-        )}% of your monthly income.`,
+        title: 'Your Needs budget was exceeded',
+        message: `You spent ${this.formatMoney(totals.needs)} on Needs, which is ${this.formatMoney(
+          exceededAmount,
+        )} above your budget of ${this.formatMoney(needsBudget)}.`,
         icon: '🏠',
-        priority: needsRatio >= 0.65 ? 96 : 84,
+        priority: usagePercentage >= 125 ? 96 : 84,
         actionLabel: 'Review needs',
         route: '/expenses',
       });
     }
 
-    if (savingsRatio >= 0.2) {
+    if (savingsTarget > 0 && totals.savings >= savingsTarget) {
+      const progressPercentage = Math.round((totals.savings / savingsTarget) * 100);
+
       insights.push({
         id: 'savings-target-reached',
         type: 'success',
         category: 'budget_split',
-        title: 'You reached the 20% savings target',
+        title: 'You reached your savings target',
         message: `You recorded ${this.formatMoney(
           totals.savings,
-        )} toward savings this month, approximately ${Math.round(
-          savingsRatio * 100,
-        )}% of your income.`,
+        )} toward savings, reaching ${progressPercentage}% of your monthly target.`,
         icon: '🌱',
         priority: 69,
         actionLabel: 'Open savings',
         route: '/savings-goals',
       });
-    } else if (this.isPastMiddleOfCurrentMonth() && savingsRatio < 0.1) {
+    } else if (
+      savingsTarget > 0 &&
+      this.isPastMiddleOfCurrentMonth() &&
+      totals.savings < savingsTarget * 0.5
+    ) {
       insights.push({
         id: 'savings-progress-low',
         type: 'info',
@@ -728,7 +777,7 @@ export class SmartInsightsService {
         title: 'Savings progress is below your target',
         message: `You have recorded ${this.formatMoney(
           totals.savings,
-        )} toward savings this month. Your 20% target would be ${this.formatMoney(income * 0.2)}.`,
+        )} toward savings. Your monthly target is ${this.formatMoney(savingsTarget)}.`,
         icon: '🎯',
         priority: 57,
         actionLabel: 'Open savings',
