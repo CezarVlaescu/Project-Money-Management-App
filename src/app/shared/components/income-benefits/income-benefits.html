@@ -1,0 +1,145 @@
+<section class="income-benefits">
+  <header class="income-benefits__header">
+    <div>
+      <span class="income-benefits__eyebrow"> Monthly benefits </span>
+
+      <h2>Extra spending balance</h2>
+
+      @if (!loading() && currentPeriod()) {
+        <p>
+          {{ totalBenefits() | number: '1.0-2' }}
+          {{ currentPeriod()?.currency ?? 'RON' }} available
+        </p>
+      }
+    </div>
+
+    @if (!loading() && currentPeriod() && !editing()) {
+      <button type="button" class="income-benefits__edit-button" (click)="startEditing()">
+        ✎ Edit
+      </button>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="income-benefits__loading">Loading monthly benefits...</div>
+  } @else if (currentPeriod()) {
+    @if (editing()) {
+      <form class="income-benefits-form" (submit)="$event.preventDefault(); saveBenefits()">
+        <label class="income-benefits-form__field">
+          <span>Meal vouchers</span>
+
+          <div class="income-benefits-form__input-wrapper">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              [value]="mealVouchersInput()"
+              (input)="updateMealVouchersInput($event)"
+            />
+
+            <span>
+              {{ currentPeriod()?.currency ?? 'RON' }}
+            </span>
+          </div>
+
+          <small>Added directly to your Needs budget.</small>
+        </label>
+
+        <label class="income-benefits-form__field">
+          <span>Gift cards</span>
+
+          <div class="income-benefits-form__input-wrapper">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              [value]="giftCardsInput()"
+              (input)="updateGiftCardsInput($event)"
+            />
+
+            <span>
+              {{ currentPeriod()?.currency ?? 'RON' }}
+            </span>
+          </div>
+
+          <small>Added directly to your Wants budget.</small>
+        </label>
+
+        @if (error()) {
+          <p class="income-benefits__error">
+            {{ error() }}
+          </p>
+        }
+
+        <div class="income-benefits-form__actions">
+          <button
+            type="button"
+            class="income-benefits-form__cancel"
+            [disabled]="saving()"
+            (click)="cancelEditing()"
+          >
+            Cancel
+          </button>
+
+          <button type="submit" class="income-benefits-form__save" [disabled]="saving()">
+            @if (saving()) {
+              Saving...
+            } @else {
+              Save benefits
+            }
+          </button>
+        </div>
+      </form>
+    } @else {
+      <div class="income-benefits__cards">
+        <article class="income-benefit-card income-benefit-card--meal">
+          <div class="income-benefit-card__top">
+            <span class="income-benefit-card__icon" aria-hidden="true"> 🍽️ </span>
+
+            <span class="income-benefit-card__category"> + Needs </span>
+          </div>
+
+          <div class="income-benefit-card__content">
+            <span>Meal vouchers</span>
+
+            <strong>
+              {{ mealVouchersAmount() | number: '1.0-2' }}
+              {{ currentPeriod()?.currency ?? 'RON' }}
+            </strong>
+
+            <p>Food and essential daily purchases</p>
+          </div>
+        </article>
+
+        <article class="income-benefit-card income-benefit-card--gift">
+          <div class="income-benefit-card__top">
+            <span class="income-benefit-card__icon" aria-hidden="true"> 🎁 </span>
+
+            <span class="income-benefit-card__category"> + Wants </span>
+          </div>
+
+          <div class="income-benefit-card__content">
+            <span>Gift cards</span>
+
+            <strong>
+              {{ giftCardsAmount() | number: '1.0-2' }}
+              {{ currentPeriod()?.currency ?? 'RON' }}
+            </strong>
+
+            <p>Shopping, entertainment and personal treats</p>
+          </div>
+        </article>
+      </div>
+
+      @if (error()) {
+        <p class="income-benefits__error">
+          {{ error() }}
+        </p>
+      }
+    }
+  } @else {
+    <div class="income-benefits__empty">Monthly benefits could not be loaded.</div>
+  }
+</section>

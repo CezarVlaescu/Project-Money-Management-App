@@ -1,4 +1,4 @@
-import { SavingsAccountType } from "../types/core.types";
+import { SavingsAccountType } from '../types/core.types';
 
 export interface CloudSavingsAccount {
   id: string;

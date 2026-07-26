@@ -40,9 +40,11 @@ export class SpendingPeriodsService {
       .eq('period_start', periodStart)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    return data;
+    return data ? this.normalizeSpendingPeriod(data) : null;
   }
 
   public async getOrCreateCurrentSpendingPeriod(
@@ -65,6 +67,8 @@ export class SpendingPeriodsService {
       daily_limit: defaultDailyLimit,
       currency: 'RON',
       include_planned_recurring: true,
+      meal_vouchers_amount: 0,
+      gift_cards_amount: 0,
     });
   }
 
@@ -82,9 +86,11 @@ export class SpendingPeriodsService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    return data;
+    return this.normalizeSpendingPeriod(data);
   }
 
   public async updateSpendingPeriod(
@@ -104,14 +110,27 @@ export class SpendingPeriodsService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    return data;
+    return this.normalizeSpendingPeriod(data);
   }
 
   public async updateDailyLimit(id: string, dailyLimit: number): Promise<CloudSpendingPeriod> {
     return this.updateSpendingPeriod(id, {
       daily_limit: dailyLimit,
+    });
+  }
+
+  public async updateIncomeBenefits(
+    id: string,
+    mealVouchersAmount: number,
+    giftCardsAmount: number,
+  ): Promise<CloudSpendingPeriod> {
+    return this.updateSpendingPeriod(id, {
+      meal_vouchers_amount: mealVouchersAmount,
+      gift_cards_amount: giftCardsAmount,
     });
   }
 
@@ -128,7 +147,7 @@ export class SpendingPeriodsService {
 
     if (error) throw error;
 
-    return data?.daily_limit ?? 100;
+    return Number(data?.daily_limit ?? 100);
   }
 
   private getMonthStart(date: Date): string {
@@ -145,5 +164,14 @@ export class SpendingPeriodsService {
     const day = String(date.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
+  }
+
+  private normalizeSpendingPeriod(period: CloudSpendingPeriod): CloudSpendingPeriod {
+    return {
+      ...period,
+      daily_limit: Number(period.daily_limit ?? 0),
+      meal_vouchers_amount: Number(period.meal_vouchers_amount ?? 0),
+      gift_cards_amount: Number(period.gift_cards_amount ?? 0),
+    };
   }
 }

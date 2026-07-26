@@ -1,4 +1,4 @@
-import { BudgetCategory } from "../types/core.types";
+import { BudgetCategory } from '../types/core.types';
 
 export interface BudgetBucket {
   category: BudgetCategory;
@@ -15,9 +15,13 @@ export interface BudgetBucket {
 
 export interface BudgetSummary {
   income: number;
+  totalAvailableIncome: number;
+  totalMonthlyBenefits: number;
+
   needs: BudgetBucket;
   wants: BudgetBucket;
   savings: BudgetBucket;
+
   totalSpent: number;
   totalRemaining: number;
   yearlySavingsPotential: number;

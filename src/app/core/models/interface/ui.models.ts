@@ -1,4 +1,4 @@
-import { ConfirmDialogTone, ToastType } from "../types/core.types";
+import { ConfirmDialogTone, ToastType } from '../types/core.types';
 
 export interface Toast {
   id: string;

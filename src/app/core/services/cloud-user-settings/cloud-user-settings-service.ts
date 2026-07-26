@@ -1,10 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '../../auth/auth-service';
 import { supabase } from '../../cloud/supabase.client';
-import {
-  CloudUserSettings,
-  UpsertCloudUserSettingsPayload,
-} from '../../models/interface';
+import { CloudUserSettings, UpsertCloudUserSettingsPayload } from '../../models/interface';
 
 @Injectable({
   providedIn: 'root',

@@ -1,5 +1,6 @@
 <app-dashboard-hero />
 <app-income-card />
+<app-income-benefits />
 <section class="dashboard-budget-list">
   @for (bucket of budgetService.budgetBuckets(); track bucket.category) {
     <app-budget-card [budgetBucket]="bucket" />

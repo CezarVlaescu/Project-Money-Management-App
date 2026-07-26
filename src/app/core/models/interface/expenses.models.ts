@@ -1,4 +1,4 @@
-import { BudgetCategory, SourceType } from "../types/core.types";
+import { BudgetCategory, SourceType } from '../types/core.types';
 
 export interface Expense {
   id: string;

@@ -4,21 +4,30 @@
       <p class="budget-overview__eyebrow">Budget overview</p>
 
       <h2 class="budget-overview__title">
-        {{ moneyFormatterService.format(budgetService.income()) }}
+        {{ moneyFormatterService.format(budgetService.totalAvailableIncome()) }}
       </h2>
+
+      @if (budgetService.totalMonthlyBenefits() > 0) {
+        <p class="budget-overview__breakdown">
+          {{ moneyFormatterService.format(budgetService.income()) }}
+          income +
+          {{ moneyFormatterService.format(budgetService.totalMonthlyBenefits()) }}
+          benefits
+        </p>
+      }
     </div>
 
-    <span class="budget-overview__badge"> 50/30/20 </span>
+    <span class="budget-overview__badge">50/30/20</span>
   </header>
 
   <div class="budget-overview__content">
-    <div class="budget-overview__chart">
+    <div class="budget-overview__chart" [style.background]="chartBackground()">
       <div class="budget-overview__chart-inner">
         <strong>
-          {{ moneyFormatterService.format(budgetService.income()) }}
+          {{ moneyFormatterService.format(budgetService.totalAvailableIncome()) }}
         </strong>
 
-        <span>Total</span>
+        <span>Total available</span>
       </div>
     </div>
 
@@ -32,7 +41,9 @@
 
           <div>
             <p>{{ bucket.label }}</p>
-            <strong>{{ moneyFormatterService.format(bucket.amount) }}</strong>
+            <strong>
+              {{ moneyFormatterService.format(bucket.amount) }}
+            </strong>
           </div>
         </div>
       }

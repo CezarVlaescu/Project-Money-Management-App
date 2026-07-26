@@ -1,4 +1,4 @@
-import { CloudSyncState, CloudSyncReason, DeletedEntityType } from "../types/core.types";
+import { CloudSyncState, CloudSyncReason, DeletedEntityType } from '../types/core.types';
 
 export interface CloudUserSettings {
   id: string;

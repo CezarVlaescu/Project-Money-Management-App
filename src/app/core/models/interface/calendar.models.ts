@@ -1,4 +1,4 @@
-import { CalendarDayStatus } from "../types/core.types";
+import { CalendarDayStatus } from '../types/core.types';
 
 export interface CalendarDayBudget {
   date: string;
@@ -42,6 +42,8 @@ export interface CloudSpendingPeriod {
   include_planned_recurring: boolean;
   created_at: string;
   updated_at: string;
+  meal_vouchers_amount: number;
+  gift_cards_amount: number;
 }
 
 export interface CreateCloudSpendingPeriodPayload {
@@ -51,6 +53,8 @@ export interface CreateCloudSpendingPeriodPayload {
   daily_limit: number;
   currency?: string;
   include_planned_recurring?: boolean;
+  meal_vouchers_amount?: number;
+  gift_cards_amount?: number;
 }
 
 export interface UpdateCloudSpendingPeriodPayload {
@@ -58,4 +62,6 @@ export interface UpdateCloudSpendingPeriodPayload {
   currency?: string;
   include_planned_recurring?: boolean;
   updated_at?: string;
+  meal_vouchers_amount?: number;
+  gift_cards_amount?: number;
 }

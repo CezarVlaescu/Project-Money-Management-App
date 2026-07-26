@@ -1,4 +1,4 @@
-import { MoneyInsightCategory, MoneyInsightType } from "../types/core.types";
+import { MoneyInsightCategory, MoneyInsightType } from '../types/core.types';
 
 export interface MoneyInsight {
   id: string;

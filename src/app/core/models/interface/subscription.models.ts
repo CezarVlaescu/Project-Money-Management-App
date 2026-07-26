@@ -1,4 +1,8 @@
-import { SubscriptionCategoryType, SubscriptionFrequency, SubscriptionPaymentStatus } from "../types/core.types";
+import {
+  SubscriptionCategoryType,
+  SubscriptionFrequency,
+  SubscriptionPaymentStatus,
+} from '../types/core.types';
 
 export interface CloudSubscription {
   id: string;

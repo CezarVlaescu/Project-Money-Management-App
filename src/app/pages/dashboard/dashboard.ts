@@ -11,10 +11,19 @@ import { SmartInsights } from '../../shared/components/smart-insights/smart-insi
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, startWith } from 'rxjs';
+import { IncomeBenefits } from '../../shared/components/income-benefits/income-benefits';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [IncomeCard, BudgetCard, BudgetOverview, RecentExpenses, DashboardHero, SmartInsights],
+  imports: [
+    IncomeCard,
+    BudgetCard,
+    BudgetOverview,
+    RecentExpenses,
+    DashboardHero,
+    SmartInsights,
+    IncomeBenefits,
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
