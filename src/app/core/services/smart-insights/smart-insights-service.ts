@@ -117,6 +117,8 @@ export class SmartInsightsService {
           include_planned_recurring: currentPeriod.include_planned_recurring,
           created_at: currentPeriod.created_at,
           updated_at: currentPeriod.updated_at,
+          meal_vouchers_amount: 0,
+          gift_cards_amount: 0
         },
         cloudExpenses.map((expense) => ({
           id: expense.id,

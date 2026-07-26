@@ -153,6 +153,8 @@ export class Calendar implements OnInit {
           include_planned_recurring: period.include_planned_recurring,
           created_at: period.created_at,
           updated_at: period.updated_at,
+          meal_vouchers_amount: 0,
+          gift_cards_amount: 0
         },
         this.expenses().map((expense) => ({
           id: expense.id,
@@ -187,6 +189,8 @@ export class Calendar implements OnInit {
           include_planned_recurring: period.include_planned_recurring,
           created_at: period.created_at,
           updated_at: period.updated_at,
+          meal_vouchers_amount: 0,
+          gift_cards_amount: 0
         },
         this.expenses().map((expense) => ({
           id: expense.id,
